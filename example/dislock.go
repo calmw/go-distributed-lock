@@ -29,15 +29,15 @@ func main() {
 func TaskLock(lockName, clientId string) {
 	t := time.Now()
 	log.Printf("%s %s,加锁...", lockName, clientId)
-	_, _ = Lk.Lock(lockName, clientId)
+	ok, retryTimes, err := Lk.Lock(lockName, clientId)
 
-	log.Printf("%s %s %d, 执行加锁后的业务...", lockName, clientId, time.Since(t))
+	log.Printf("%s %s %d (%v %v %v), 执行加锁后的业务...", lockName, clientId, time.Since(t), ok, retryTimes, err)
 }
 
 func TaskUnLock(lockName, clientId string) {
 	log.Printf("%s %s,释放锁...", lockName, clientId)
 	t := time.Now()
-	_, _ = Lk.UnLock(lockName, clientId)
+	ok, retryTimes, err := Lk.UnLock(lockName, clientId)
 
-	log.Printf("%s %s %d,执行释放锁后的业务...", lockName, clientId, time.Since(t))
+	log.Printf("%s %s %d (%v %v %v),执行释放锁后的业务...", lockName, clientId, time.Since(t), ok, retryTimes, err)
 }

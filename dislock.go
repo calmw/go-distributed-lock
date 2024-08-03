@@ -6,7 +6,6 @@ import (
 	"github.com/calmw/go-distributed-lock/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
 	"time"
 )
 
@@ -29,13 +28,15 @@ func NewLock(ServerAddr string, retryMillisecondDur, retryMaxTimes int) *Lock {
 lockName 必选参数，锁的名称，可根据业务使用多种锁
 clientId 必选参数，加锁的节点ID，分布式的每个节点ID必须唯一
 */
-func (l *Lock) Lock(lockName, clientId string) (bool, error) {
+func (l *Lock) Lock(lockName, clientId string) (bool, int, error) {
 	var result bool
 	var err error
+	var retryTimes int
 	for i := 1; i <= l.RetryMaxTimes; i++ {
-		if i == l.RetryMaxTimes-1 {
-			r, er := forceUnLock(l.Lk, lockName)
-			log.Printf("%s-%s, 加锁%d次失败, 强制释放锁 %v %v", lockName, clientId, i, r, er)
+		retryTimes = i
+		if i == l.RetryMaxTimes {
+			r, er := forceLock(l.Lk, lockName, clientId)
+			return r, retryTimes, er
 		}
 		ok, e := lock(l.Lk, lockName, clientId)
 		if ok {
@@ -46,9 +47,8 @@ func (l *Lock) Lock(lockName, clientId string) (bool, error) {
 		err = e
 		time.Sleep(time.Millisecond * time.Duration(l.RetryMillisecondDur))
 	}
-	log.Printf("%s-%s 加锁 result %v %v", lockName, clientId, result, err)
 
-	return result, err
+	return result, retryTimes, err
 }
 
 // UnLock
@@ -56,14 +56,15 @@ func (l *Lock) Lock(lockName, clientId string) (bool, error) {
 lockName 必选参数，锁的名称，可根据业务使用多种锁
 clientId 必选参数，加锁的节点ID，分布式的每个节点ID必须唯一
 */
-func (l *Lock) UnLock(lockName, clientId string) (bool, error) {
+func (l *Lock) UnLock(lockName, clientId string) (bool, int, error) {
 	var result bool
 	var err error
+	var retryTimes int
 	for i := 1; i <= l.RetryMaxTimes; i++ {
+		retryTimes = i
 		if i == l.RetryMaxTimes {
 			r, er := forceUnLock(l.Lk, lockName)
-			log.Printf("%s-%s, 释放锁%d次失败, 强制释放锁 %v %v", lockName, clientId, i, r, er)
-			return r, er
+			return r, retryTimes, er
 		}
 		ok, e := unLock(l.Lk, lockName, clientId)
 		if ok {
@@ -74,9 +75,8 @@ func (l *Lock) UnLock(lockName, clientId string) (bool, error) {
 		err = e
 		time.Sleep(time.Millisecond * 200)
 	}
-	log.Printf("%s-%s 释放锁 result %v %v", lockName, clientId, result, err)
 
-	return result, err
+	return result, retryTimes, err
 }
 
 // ForceUnLock
@@ -85,7 +85,16 @@ lockName 必选参数，锁的名称，可根据业务使用多种锁
 */
 func (l *Lock) ForceUnLock(lockName string) (bool, error) {
 	res, err := forceUnLock(l.Lk, lockName)
-	log.Printf("%s, 强制释放锁 %v %v", lockName, res, err)
+	return res, err
+}
+
+// ForceLock
+/*
+lockName 必选参数，锁的名称，可根据业务使用多种锁
+clientId 必选参数，加锁的节点ID，分布式的每个节点ID必须唯一
+*/
+func (l *Lock) ForceLock(lockName, clientId string) (bool, error) {
+	res, err := forceLock(l.Lk, lockName, clientId)
 	return res, err
 }
 
@@ -97,7 +106,6 @@ func lock(l service.LockServiceClient, lockName, clientId string) (bool, error) 
 
 	s := status.Convert(err) // status.Convert函数分别访问错误代码和错误消息
 	if s.Code() != codes.OK || err != nil {
-		//log.Fatalf("Request failed: %v-%v\n", s.Code(), s.Message())
 		return false, err
 	}
 	return result.Result, errors.New(result.Msg)
@@ -111,7 +119,19 @@ func unLock(l service.LockServiceClient, lockName, clientId string) (bool, error
 
 	s := status.Convert(err) // status.Convert函数分别访问错误代码和错误消息
 	if s.Code() != codes.OK || err != nil {
-		log.Fatalf("Request failed: %v-%v\n", s.Code(), s.Message())
+		return false, err
+	}
+	return result.Result, errors.New(result.Msg)
+}
+
+func forceLock(l service.LockServiceClient, lockName, clientId string) (bool, error) {
+	result, err := l.ForceLock(context.Background(), &service.ForceLockRequest{
+		LockName: lockName,
+		ClientId: clientId,
+	})
+
+	s := status.Convert(err) // status.Convert函数分别访问错误代码和错误消息
+	if s.Code() != codes.OK || err != nil {
 		return false, err
 	}
 	return result.Result, errors.New(result.Msg)
@@ -124,7 +144,6 @@ func forceUnLock(l service.LockServiceClient, lockName string) (bool, error) {
 
 	s := status.Convert(err) // status.Convert函数分别访问错误代码和错误消息
 	if s.Code() != codes.OK || err != nil {
-		//log.Fatalf("Request failed: %v-%v\n", s.Code(), s.Message())
 		return false, err
 	}
 	return result.Result, errors.New(result.Msg)
