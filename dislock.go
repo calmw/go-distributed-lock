@@ -12,14 +12,14 @@ import (
 
 type Lock struct {
 	RetryMillisecondDur int // 尝试加锁的时间间隔 单位毫秒
-	MaxRetryTimes       int // 最大加锁失败次数,超过后将强制释放锁，然后再枷锁。因为某个节点可能在加锁未释放的情况下异常退出
+	RetryMaxTimes       int // 最大加锁失败次数,超过后将强制释放锁，然后再枷锁。因为某个节点可能在加锁未释放的情况下异常退出
 	Lk                  service.LockServiceClient
 }
 
-func NewLock(ServerAddr string, millisecondDur, maxRetryTimes int) *Lock {
+func NewLock(ServerAddr string, retryMillisecondDur, maxRetryTimes int) *Lock {
 	return &Lock{
-		RetryMillisecondDur: millisecondDur,
-		MaxRetryTimes:       maxRetryTimes,
+		RetryMillisecondDur: retryMillisecondDur,
+		RetryMaxTimes:       maxRetryTimes,
 		Lk:                  NewLockServiceClient(ServerAddr),
 	}
 }
@@ -32,8 +32,8 @@ clientId 必选参数，加锁的节点ID，分布式的每个节点ID必须唯�
 func (l *Lock) Lock(lockName, clientId string) (bool, error) {
 	var result bool
 	var err error
-	for i := 1; i <= l.MaxRetryTimes; i++ {
-		if i == l.MaxRetryTimes-1 {
+	for i := 1; i <= l.RetryMaxTimes; i++ {
+		if i == l.RetryMaxTimes-1 {
 			r, er := forceUnLock(l.Lk, lockName)
 			log.Printf("%s-%s, 加锁%d次失败, 强制释放锁 %v %v", lockName, clientId, i, r, er)
 		}
@@ -59,8 +59,8 @@ clientId 必选参数，加锁的节点ID，分布式的每个节点ID必须唯�
 func (l *Lock) UnLock(lockName, clientId string) (bool, error) {
 	var result bool
 	var err error
-	for i := 1; i <= l.MaxRetryTimes; i++ {
-		if i == l.MaxRetryTimes {
+	for i := 1; i <= l.RetryMaxTimes; i++ {
+		if i == l.RetryMaxTimes {
 			r, er := forceUnLock(l.Lk, lockName)
 			log.Printf("%s-%s, 释放锁%d次失败, 强制释放锁 %v %v", lockName, clientId, i, r, er)
 			return r, er
