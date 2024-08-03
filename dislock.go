@@ -11,7 +11,7 @@ import (
 
 type Lock struct {
 	RetryMillisecondDur int // 尝试加锁的时间间隔 单位毫秒
-	RetryMaxTimes       int // 最大加锁失败次数,超过后将强制释放锁，然后再枷锁。因为某个节点可能在加锁未释放的情况下异常退出
+	RetryMaxTimes       int // 最大加锁失败次数,超过后将强制释放锁，然后再枷锁。因为某个节点可能在加锁未释放的情况下异常退出. 如果设置为0，加不到锁就一直阻塞
 	Lk                  service.LockServiceClient
 }
 
@@ -32,20 +32,34 @@ func (l *Lock) Lock(lockName, clientId string) (bool, int, error) {
 	var result bool
 	var err error
 	var retryTimes int
-	for i := 1; i <= l.RetryMaxTimes; i++ {
-		retryTimes = i
-		if i == l.RetryMaxTimes {
-			r, er := forceLock(l.Lk, lockName, clientId)
-			return r, retryTimes, er
+	if l.RetryMaxTimes == 0 {
+		for {
+			retryTimes++
+			ok, e := lock(l.Lk, lockName, clientId)
+			if ok {
+				result = true // 加锁成功
+				err = nil
+				break
+			}
+			err = e
+			time.Sleep(time.Millisecond * time.Duration(l.RetryMillisecondDur))
 		}
-		ok, e := lock(l.Lk, lockName, clientId)
-		if ok {
-			result = true // 加锁成功
-			err = nil
-			break
+	} else {
+		for i := 1; i <= l.RetryMaxTimes; i++ {
+			retryTimes = i
+			if i == l.RetryMaxTimes {
+				r, er := forceLock(l.Lk, lockName, clientId)
+				return r, retryTimes, er
+			}
+			ok, e := lock(l.Lk, lockName, clientId)
+			if ok {
+				result = true // 加锁成功
+				err = nil
+				break
+			}
+			err = e
+			time.Sleep(time.Millisecond * time.Duration(l.RetryMillisecondDur))
 		}
-		err = e
-		time.Sleep(time.Millisecond * time.Duration(l.RetryMillisecondDur))
 	}
 
 	return result, retryTimes, err
@@ -60,20 +74,34 @@ func (l *Lock) UnLock(lockName, clientId string) (bool, int, error) {
 	var result bool
 	var err error
 	var retryTimes int
-	for i := 1; i <= l.RetryMaxTimes; i++ {
-		retryTimes = i
-		if i == l.RetryMaxTimes {
-			r, er := forceUnLock(l.Lk, lockName)
-			return r, retryTimes, er
+	if l.RetryMaxTimes == 0 {
+		for {
+			retryTimes++
+			ok, e := unLock(l.Lk, lockName, clientId)
+			if ok {
+				err = nil
+				result = true // 释放锁成功
+				break
+			}
+			err = e
+			time.Sleep(time.Millisecond * 200)
 		}
-		ok, e := unLock(l.Lk, lockName, clientId)
-		if ok {
-			err = nil
-			result = true // 释放锁成功
-			break
+	} else {
+		for i := 1; i <= l.RetryMaxTimes; i++ {
+			retryTimes = i
+			if i == l.RetryMaxTimes {
+				r, er := forceUnLock(l.Lk, lockName)
+				return r, retryTimes, er
+			}
+			ok, e := unLock(l.Lk, lockName, clientId)
+			if ok {
+				err = nil
+				result = true // 释放锁成功
+				break
+			}
+			err = e
+			time.Sleep(time.Millisecond * 200)
 		}
-		err = e
-		time.Sleep(time.Millisecond * 200)
 	}
 
 	return result, retryTimes, err
