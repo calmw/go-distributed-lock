@@ -4,7 +4,7 @@
 
 ## 使用方法
 
-- 1 部署服务端：https://github.com/calmw/go-distributed-lock-server
+- 1 部署服务：https://github.com/calmw/go-distributed-lock-server
 
-- 2 客户端使用
+- 2 使用
     - demo [dislock.go](example%2Fdislock.go)
