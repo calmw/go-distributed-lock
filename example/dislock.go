@@ -18,6 +18,7 @@ func main() {
 	if len(serverAddr) == 0 {
 		serverAddr = DefaultServerAddr
 	}
+	// retryMaxTimes 设置为0时，加锁和释放锁不成功就一直等待
 	Lk = dislock.NewLock(serverAddr, 200, 3000)
 
 	TaskLock("order_lock", "userA")

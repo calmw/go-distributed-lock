@@ -2,7 +2,7 @@ module example
 
 go 1.22.2
 
-require github.com/calmw/go-distributed-lock v0.0.6
+require github.com/calmw/go-distributed-lock v0.0.7
 
 require (
 	golang.org/x/net v0.25.0 // indirect
