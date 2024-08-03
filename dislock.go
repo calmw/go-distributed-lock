@@ -16,10 +16,10 @@ type Lock struct {
 	Lk                  service.LockServiceClient
 }
 
-func NewLock(ServerAddr string, retryMillisecondDur, maxRetryTimes int) *Lock {
+func NewLock(ServerAddr string, retryMillisecondDur, retryMaxTimes int) *Lock {
 	return &Lock{
 		RetryMillisecondDur: retryMillisecondDur,
-		RetryMaxTimes:       maxRetryTimes,
+		RetryMaxTimes:       retryMaxTimes,
 		Lk:                  NewLockServiceClient(ServerAddr),
 	}
 }
