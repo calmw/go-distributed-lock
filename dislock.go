@@ -46,7 +46,7 @@ func (l *Lock) Lock(lockName, clientId string) (bool, error) {
 		err = e
 		time.Sleep(time.Millisecond * time.Duration(l.RetryMillisecondDur))
 	}
-	log.Printf("%s-%s 加锁 result %d %v", lockName, clientId, result, err)
+	log.Printf("%s-%s 加锁 result %v %v", lockName, clientId, result, err)
 
 	return result, err
 }
@@ -74,7 +74,7 @@ func (l *Lock) UnLock(lockName, clientId string) (bool, error) {
 		err = e
 		time.Sleep(time.Millisecond * 200)
 	}
-	log.Printf("%s-%s 释放锁 result %d %v", lockName, clientId, result, err)
+	log.Printf("%s-%s 释放锁 result %v %v", lockName, clientId, result, err)
 
 	return result, err
 }
