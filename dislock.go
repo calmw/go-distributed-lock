@@ -11,16 +11,16 @@ import (
 )
 
 type Lock struct {
-	MillisecondDur int // 尝试加锁的时间间隔 单位毫秒
-	MaxRetryTimes  int // 最大加锁失败次数,超过后将强制释放锁，然后再枷锁。因为某个节点可能在加锁未释放的情况下异常退出
-	Lk             service.LockServiceClient
+	RetryMillisecondDur int // 尝试加锁的时间间隔 单位毫秒
+	MaxRetryTimes       int // 最大加锁失败次数,超过后将强制释放锁，然后再枷锁。因为某个节点可能在加锁未释放的情况下异常退出
+	Lk                  service.LockServiceClient
 }
 
 func NewLock(ServerAddr string, millisecondDur, maxRetryTimes int) *Lock {
 	return &Lock{
-		MillisecondDur: millisecondDur,
-		MaxRetryTimes:  maxRetryTimes,
-		Lk:             NewLockServiceClient(ServerAddr),
+		RetryMillisecondDur: millisecondDur,
+		MaxRetryTimes:       maxRetryTimes,
+		Lk:                  NewLockServiceClient(ServerAddr),
 	}
 }
 
@@ -44,7 +44,7 @@ func (l *Lock) Lock(lockName, clientId string) (bool, error) {
 			break
 		}
 		err = e
-		time.Sleep(time.Millisecond * time.Duration(l.MillisecondDur))
+		time.Sleep(time.Millisecond * time.Duration(l.RetryMillisecondDur))
 	}
 	log.Printf("%s-%s 加锁 result %d %v", lockName, clientId, result, err)
 
