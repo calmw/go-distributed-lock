@@ -23,13 +23,13 @@ func main() {
 	// retryMaxTimes 设置为0时，加锁/释放锁不成功就一直等待; 不为0时，尝试到该次数后强制执行加锁/释放锁
 	Lk = dislock.NewLock(serverAddr, 200, 3000)
 
-	TaskLock("order_lock", "clientA")
+	lock("order_lock", "clientA")
 	log.Println("订单操作")
 	time.Sleep(time.Second * 10)
-	TaskUnLock("order_lock", "clientA")
+	unlock("order_lock", "clientA")
 }
 
-func TaskLock(lockName, clientId string) {
+func lock(lockName, clientId string) {
 	t := time.Now()
 	log.Printf("%s %s, 加锁...", lockName, clientId)
 	ok, retryTimes, err := Lk.Lock(lockName, clientId)
@@ -37,7 +37,7 @@ func TaskLock(lockName, clientId string) {
 	log.Printf("%s %s %d (%v %v %v), 执行加锁后的业务...", lockName, clientId, time.Since(t), ok, retryTimes, err)
 }
 
-func TaskUnLock(lockName, clientId string) {
+func unlock(lockName, clientId string) {
 	log.Printf("%s %s, 释放锁...", lockName, clientId)
 	t := time.Now()
 	ok, retryTimes, err := Lk.UnLock(lockName, clientId)
