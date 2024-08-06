@@ -8,3 +8,6 @@
 
 - 2 使用
     - demo [dislock.go](example%2Fdislock.go)
+## 测试
+- 耗时实测
+- ![img.png](example%2Fimg.png)
