@@ -6,6 +6,7 @@ import (
 	"github.com/calmw/go-distributed-lock/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strings"
 	"time"
 )
 
@@ -84,6 +85,9 @@ func (l *Lock) UnLock(lockName, clientId string) (bool, int, error) {
 				break
 			}
 			err = e
+			if e != nil && strings.Contains(e.Error(), "does not exist") {
+				return result, retryTimes, err
+			}
 			time.Sleep(time.Millisecond * 200)
 		}
 	} else {
@@ -100,6 +104,9 @@ func (l *Lock) UnLock(lockName, clientId string) (bool, int, error) {
 				break
 			}
 			err = e
+			if e != nil && strings.Contains(e.Error(), "does not exist") {
+				return result, retryTimes, err
+			}
 			time.Sleep(time.Millisecond * 200)
 		}
 	}
