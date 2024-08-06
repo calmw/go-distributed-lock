@@ -20,13 +20,13 @@ func main() {
 	}
 
 	// retryMillisecondDur 加锁/释放锁不成功, 距下次重试的时间间隔
-	// retryMaxTimes 设置为0时，加锁/释放锁不成功就一直等待; 不为0时，尝试到一定次数后强制执行加锁/释放锁
+	// retryMaxTimes 设置为0时，加锁/释放锁不成功就一直等待; 不为0时，尝试到该次数后强制执行加锁/释放锁
 	Lk = dislock.NewLock(serverAddr, 200, 3000)
 
-	TaskLock("order_lock", "userA")
+	TaskLock("order_lock", "clientA")
 	log.Println("订单操作")
 	time.Sleep(time.Second * 10)
-	TaskUnLock("order_lock", "userA")
+	TaskUnLock("order_lock", "clientA")
 }
 
 func TaskLock(lockName, clientId string) {
