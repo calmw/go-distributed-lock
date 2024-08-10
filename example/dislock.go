@@ -19,7 +19,7 @@ func main() {
 		serverAddr = DefaultServerAddr
 	}
 
-	// retryMillisecondDur 加锁/释放锁不成功, 距下次重试的时间间隔
+	// retryMillisecondDur 加锁/释放锁不成功, 距下次重试的时间间隔(单位：毫秒)
 	// retryMaxTimes 设置为0时，加锁/释放锁不成功就一直等待; 不为0时，尝试到该次数后强制执行加锁/释放锁
 	Lk = dislock.NewLock(serverAddr, 200, 3000)
 
@@ -31,16 +31,16 @@ func main() {
 
 func lock(lockName, clientId string) {
 	t := time.Now()
-	log.Printf("%s %s, 加锁...", lockName, clientId)
+	log.Printf("%s %s, 加锁... \n", lockName, clientId)
 	ok, retryTimes, err := Lk.Lock(lockName, clientId)
 
-	log.Printf("%s %s %d (%v %v %v), 执行加锁后的业务...", lockName, clientId, time.Since(t), ok, retryTimes, err)
+	log.Printf("%s %s %d (%v %v %v), 执行加锁后的业务... \n", lockName, clientId, time.Since(t), ok, retryTimes, err)
 }
 
 func unlock(lockName, clientId string) {
-	log.Printf("%s %s, 释放锁...", lockName, clientId)
+	log.Printf("%s %s, 释放锁... \n", lockName, clientId)
 	t := time.Now()
 	ok, retryTimes, err := Lk.UnLock(lockName, clientId)
 
-	log.Printf("%s %s %d (%v %v %v),执行释放锁后的业务...", lockName, clientId, time.Since(t), ok, retryTimes, err)
+	log.Printf("%s %s %d (%v %v %v),执行释放锁后的业务... \n", lockName, clientId, time.Since(t), ok, retryTimes, err)
 }
